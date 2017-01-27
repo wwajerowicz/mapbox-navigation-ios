@@ -9,12 +9,6 @@ import MapboxDirections
 public enum AlertLevel: Int {
     
     /*
-     Default `AlertLevel`
-    */
-    case none
-    
-    
-    /*
      The user has started the route.
      */
     case depart
@@ -117,6 +111,12 @@ open class RouteProgress: NSObject {
 
 @objc(MBRouteLegProgress)
 open class RouteLegProgress: NSObject {
+    /**
+     Bool whether the announcement for departing on a leg has been given
+    */
+    public var hasGivenDepartureAnnouncement: Bool = false
+
+    
     public let leg: RouteLeg
     
     
@@ -155,7 +155,7 @@ open class RouteLegProgress: NSObject {
     }
 
     
-    public var alertUserLevel: AlertLevel = .none
+    public var alertUserLevel: AlertLevel = .depart
 
     
     public func stepBefore(_ step: RouteStep) -> RouteStep? {
@@ -232,7 +232,6 @@ open class RouteLegProgress: NSObject {
 
 @objc(MBRouteStepProgress)
 open class RouteStepProgress: NSObject {
-
     public let step: RouteStep
 
 
