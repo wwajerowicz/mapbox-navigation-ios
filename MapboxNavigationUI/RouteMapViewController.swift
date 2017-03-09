@@ -1,17 +1,16 @@
 import UIKit
-import Mapbox
 import MapboxDirections
 import Pulley
 import MapboxNavigation
 import SDWebImage
+import MapKit
 
-
-class ArrowFillPolyline: MGLPolylineFeature {}
+class ArrowFillPolyline: MKPolyline {}
 class ArrowStrokePolyline: ArrowFillPolyline {}
 
 
-class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDelegate {
-    @IBOutlet weak var mapView: MGLMapView!
+class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDelegate, MKMapViewDelegate {
+    @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var recenterButton: UIButton!
     
     var routePageViewController: RoutePageViewController!
@@ -21,8 +20,8 @@ class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDe
     var route: Route { return routeController.routeProgress.route }
     
     var directions: Directions!
-    var destination: MGLAnnotation!
-    var pendingCamera: MGLMapCamera?
+    var destination: MKAnnotation!
+    var pendingCamera: MKMapCamera?
     
     weak var routeController: RouteController!
     
@@ -37,16 +36,17 @@ class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDe
     override func viewDidLoad() {
         super.viewDidLoad()
         automaticallyAdjustsScrollViewInsets = false
-        
-        mapView.delegate = self
+
         mapView.tintColor = NavigationUI.shared.tintColor
         recenterButton.applyDefaultCornerRadiusShadow(cornerRadius: 22)
+        
+        addRoute(route: route)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
-        mapView.compassView.isHidden = true
+        mapView.delegate = self
+        mapView.showsCompass = false
         
         mapView.addAnnotation(destination)
         
@@ -65,13 +65,7 @@ class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDe
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        mapView.setUserLocationVerticalAlignment(.bottom, animated: false)
-        mapView.setUserTrackingMode(.followWithCourse, animated: false)
-        
-        let topPadding: CGFloat = 30
-        let bottomPadding: CGFloat = 50
-        let contentInset = UIEdgeInsets(top: routePageViewController.view.frame.maxY+topPadding, left: 0, bottom: bottomPadding, right: 0)
-        mapView.setContentInset(contentInset, animated: false)
+        mapView.setUserTrackingMode(.followWithHeading, animated: false)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -93,7 +87,7 @@ class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDe
     }
     
     @IBAction func recenter(_ sender: AnyObject) {
-        mapView.userTrackingMode = .followWithCourse
+        mapView.userTrackingMode = .followWithHeading
         
         // Recenter also resets the current page. Same behavior as rerouting.
         routePageViewController.notifyDidReRoute()
@@ -116,21 +110,34 @@ class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDe
     }
     
     func trackingModeTimerDone() {
-        mapView.userTrackingMode = .followWithCourse
+        mapView.userTrackingMode = .followWithHeading
     }
     
     func notifyDidReroute(route: Route) {
         routePageViewController.notifyDidReRoute()
-        mapView.annotate([route], clearMap: true)
-        mapView.userTrackingMode = .followWithCourse
+        addRoute(route: route)
+        mapView.userTrackingMode = .followWithHeading
     }
     
-    func notifyAlertLevelDidChange(routeProgress: RouteProgress) {
-        if routeProgress.currentLegProgress.followOnStep != nil {
-            updateArrowAnnotations(routeProgress)
-        } else {
-            mapView.removeArrow()
+    func addRoute(route: Route) {
+        mapView.removeOverlays(mapView.overlays ?? [])
+        var polyline = MKPolyline(coordinates: route.coordinates!, count: Int(route.coordinateCount))
+        mapView.add(polyline, level: .aboveRoads)
+    }
+
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        var polylineRender = MKPolylineRenderer(overlay: overlay)
+        polylineRender.strokeColor = NavigationUI.shared.tintColor
+        polylineRender.lineWidth = 6
+        return polylineRender
+    }
+    
+    func mapView(_ mapView: MKMapView, didChange mode: MKUserTrackingMode, animated: Bool) {
+        if resetTrackingModeTimer != nil {
+            resetTrackingModeTimer.invalidate()
         }
+        
+        mapView.userTrackingMode = .followWithHeading
     }
     
     func notifyDidChange(routeProgress: RouteProgress, location: CLLocation, secondsRemaining: TimeInterval) {
@@ -233,69 +240,69 @@ class RouteMapViewController: UIViewController, PulleyPrimaryContentControllerDe
             return
         }
         
-        mapView.removeArrow()
-        mapView.addArrow(routeProgress)
+//        mapView.removeArrow()
+//        mapView.addArrow(routeProgress)
+    }
+    
+    func mapView(_ mapView: MKMapView, didDeselect annotation: MKAnnotation) {
+        mapView.userTrackingMode = .followWithHeading
     }
 }
 
 // MARK: MGLMapViewDelegate
 
-extension RouteMapViewController: MGLMapViewDelegate {
-    func mapView(_ mapView: MGLMapView, strokeColorForShapeAnnotation annotation: MGLShape) -> UIColor {
-        if annotation is ArrowStrokePolyline {
-            return NavigationUI.shared.tintStrokeColor
-        } else if annotation is ArrowFillPolyline {
-            return .white
-        } else {
-            return NavigationUI.shared.tintColor
-        }
-    }
+//extension RouteMapViewController: MKMapViewDelegate {
+//    func mapView(_ mapView: MGLMapView, strokeColorForShapeAnnotation annotation: MGLShape) -> UIColor {
+//        if annotation is ArrowStrokePolyline {
+//            return NavigationUI.shared.tintStrokeColor
+//        } else if annotation is ArrowFillPolyline {
+//            return .white
+//        } else {
+//            return NavigationUI.shared.tintColor
+//        }
+//    }
     
-    func mapView(_ mapView: MGLMapView, lineWidthForPolylineAnnotation annotation: MGLPolyline) -> CGFloat {
-        if annotation is ArrowStrokePolyline {
-            return 7
-        } else if annotation is ArrowFillPolyline {
-            return 6
-        } else {
-            return 8
-        }
-    }
-    
-    func mapView(_ mapView: MGLMapView, didChange mode: MGLUserTrackingMode, animated: Bool) {
-        if resetTrackingModeTimer != nil {
-            resetTrackingModeTimer.invalidate()
-        }
-        
-        if mode != .followWithCourse {
-            recenterButton.isHidden = false
-            startResetTrackingModeTimer()
-        } else {
-            recenterButton.isHidden = true
-        }
-    }
-    
-    func mapView(_ mapView: MGLMapView, regionDidChangeAnimated animated: Bool) {
-        if resetTrackingModeTimer != nil && mapView.userTrackingMode == .none {
-            resetTrackingModeTimer.invalidate()
-            startResetTrackingModeTimer()
-        }
-    }
-    
-    func mapView(_ mapView: MGLMapView, didFinishLoading style: MGLStyle) {
-        mapView.annotate([route], clearMap: false)
-    }
-    
-    func mapView(_ mapView: MGLMapView, didSelect annotation: MGLAnnotation) {
-        if resetTrackingModeTimer != nil {
-            resetTrackingModeTimer.invalidate()
-            startResetTrackingModeTimer()
-        }
-    }
-    
-    func mapView(_ mapView: MGLMapView, didDeselect annotation: MGLAnnotation) {
-        mapView.userTrackingMode = .followWithCourse
-    }
-}
+//    func mapView(_ mapView: MKMapView, lineWidthForPolylineAnnotation annotation: MKPolyline) -> CGFloat {
+//        if annotation is ArrowStrokePolyline {
+//            return 7
+//        } else if annotation is ArrowFillPolyline {
+//            return 6
+//        } else {
+//            return 8
+//        }
+//    }
+//    
+//    func mapView(_ mapView: MKMapView, didChange mode: MKUserTrackingMode, animated: Bool) {
+//        if resetTrackingModeTimer != nil {
+//            resetTrackingModeTimer.invalidate()
+//        }
+//        
+//        if mode != .follow {
+//            recenterButton.isHidden = false
+//            startResetTrackingModeTimer()
+//        } else {
+//            recenterButton.isHidden = true
+//        }
+//    }
+//
+//    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+//        if resetTrackingModeTimer != nil && mapView.userTrackingMode == .none {
+//            resetTrackingModeTimer.invalidate()
+//            startResetTrackingModeTimer()
+//        }
+//    }
+//    
+//    func mapViewDidFinishLoadingMap(_ mapView: MKMapView) {
+//        addRoute(route: route)
+//    }
+//    
+//    func mapView(_ mapView: MKMapView, didSelect annotation: MKAnnotation) {
+//        if resetTrackingModeTimer != nil {
+//            resetTrackingModeTimer.invalidate()
+//            startResetTrackingModeTimer()
+//        }
+//    }
+//}
 
 // MARK: RouteManeuverPageViewControllerDelegate
 
@@ -327,9 +334,9 @@ extension RouteMapViewController: RoutePageViewControllerDelegate {
         
         
         if routeController.routeProgress.currentLegProgress.isCurrentStep(step!) {
-            mapView.userTrackingMode = .followWithCourse
+//            mapView.userTrackingMode = .followWithHeading
         } else {
-            mapView.setCenter(step!.maneuverLocation, zoomLevel: mapView.zoomLevel, direction: step!.initialHeading!, animated: true, completionHandler: nil)
+//            mapView.setCenter(step!.maneuverLocation, zoomLevel: mapView.zoomLevel, direction: step!.initialHeading!, animated: true, completionHandler: nil)
         }
     }
 

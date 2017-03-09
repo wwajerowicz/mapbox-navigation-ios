@@ -1,6 +1,6 @@
 import UIKit
 import MapboxDirections
-import Mapbox
+import MapKit
 
 let MBSecondsBeforeResetTrackingMode:TimeInterval = 25.0
 
@@ -65,7 +65,7 @@ public class NavigationUI: NSObject {
      for further information.
      */
     public class func routeViewController(for route: Route, directions: Directions = Directions.shared) -> RouteViewController {
-        let destination = MGLPointAnnotation()
+        let destination = MKPointAnnotation()
         destination.coordinate = route.coordinates!.last!
         
         let storyboard = UIStoryboard(name: "Navigation", bundle: Bundle.navigationUI)

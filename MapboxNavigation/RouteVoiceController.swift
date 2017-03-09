@@ -45,7 +45,7 @@ public class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     public var instructionVoiceVolume = "x-loud"
     
     
-    public init(regionType: AWSRegionType = AWSRegionType.USEast1, identityPoolId: String?) {
+    public init(regionType: AWSRegionType = AWSRegionType.USEast1, identityPoolId: String? = nil) {
         if let identityPoolId = identityPoolId {
             self.useDefaultVoice = false
             let credentialsProvider = AWSCognitoCredentialsProvider(regionType:regionType, identityPoolId: identityPoolId)

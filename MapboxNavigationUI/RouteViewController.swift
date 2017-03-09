@@ -1,7 +1,7 @@
 import UIKit
 import MapboxNavigation
 import MapboxDirections
-import Mapbox
+import MapKit
 import Pulley
 
 @objc(MBNavigationPulleyViewController)
@@ -28,7 +28,7 @@ public class RouteViewController: NavigationPulleyViewController {
      on the destination of your route. The last coordinate of the route will be
      used if no destination is given.
     */
-    public var destination: MGLAnnotation!
+    public var destination: MKAnnotation!
     
     /**
      `directions` is an instance of `Directions` need for rerouting.
@@ -42,12 +42,12 @@ public class RouteViewController: NavigationPulleyViewController {
      the initial transition from a previous viewport and prevent a trigger
      from an excessive significant location update.
      */
-    public var pendingCamera: MGLMapCamera?
+    public var pendingCamera: MKMapCamera?
     
     /**
      `origin` is an instance of `MGLAnnotation` representing the origin of your route.
      */
-    public var origin: MGLAnnotation?
+    public var origin: MKAnnotation?
     
     /**
      The receiver’s delegate.
@@ -59,7 +59,7 @@ public class RouteViewController: NavigationPulleyViewController {
      
      Note that you should not change the `mapView`'s delegate.
      */
-    public var mapView: MGLMapView? {
+    public var mapView: MKMapView? {
         get {
             return mapViewController?.mapView
         }
@@ -163,7 +163,6 @@ public class RouteViewController: NavigationPulleyViewController {
         let routeProgress = notification.userInfo![RouteControllerAlertLevelDidChangeNotificationRouteProgressKey] as! RouteProgress
         let alertLevel = routeProgress.currentLegProgress.alertUserLevel
         
-        mapViewController?.notifyAlertLevelDidChange(routeProgress: routeProgress)
         tableViewController?.notifyAlertLevelDidChange()
         
         if let upComingStep = routeProgress.currentLegProgress.upComingStep, alertLevel == .high {
@@ -223,7 +222,7 @@ public class RouteViewController: NavigationPulleyViewController {
         }
         
         if destination == nil {
-            let annotation = MGLPointAnnotation()
+            let annotation = MKPointAnnotation()
             annotation.coordinate = route.coordinates!.last!
             destination = annotation
         }
