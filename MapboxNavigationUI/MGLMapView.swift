@@ -33,39 +33,81 @@ extension MGLMapView {
             style.removeSource(source)
         }
         
-        let polyline = MGLPolylineFeature(coordinates: &coordinates, count: route.coordinateCount)
+        let allLegNodes = route.legs.map {
+            $0.segmentAttributes?[.congestionLevel]
+        }
         
-        if let source = style.source(withIdentifier: sourceIdentifier) as? MGLShapeSource {
-            source.shape = polyline
-        } else {
-            let geoJSONSource = MGLShapeSource(identifier: sourceIdentifier, shape: polyline, options: nil)
-            let line = MGLLineStyleLayer(identifier: routeLayerIdentifier, source: geoJSONSource)
-            let lineCasing = MGLLineStyleLayer(identifier: routeLayerCasingIdentifier, source: geoJSONSource)
+        let nodes = allLegNodes.flatMap { $0 }[0]
+        
+        if nodes.isEmpty {
+            let polyline = MGLPolylineFeature(coordinates: &coordinates, count: route.coordinateCount)
             
-            line.lineColor = MGLStyleValue(rawValue: NavigationUI.shared.tintStrokeColor.withAlphaComponent(0.6))
-            line.lineWidth = MGLStyleValue(rawValue: 5)
-            lineCasing.lineColor = MGLStyleValue(rawValue: NavigationUI.shared.tintStrokeColor)
-            lineCasing.lineWidth = MGLStyleValue(rawValue: 9)
-            
-            let cap = NSValue(mglLineCap: .round)
-            let join = NSValue(mglLineJoin: .round)
-            
-            line.lineCap = MGLStyleValue(rawValue: cap)
-            line.lineJoin = MGLStyleValue(rawValue: join)
-            lineCasing.lineCap = MGLStyleValue(rawValue: cap)
-            lineCasing.lineJoin = MGLStyleValue(rawValue: join)
-            
-            style.addSource(geoJSONSource)
-            for layer in style.layers.reversed() {
-                if let layer = layer as? MGLStyleLayer, !(layer is MGLSymbolStyleLayer) &&
-                    layer.identifier != arrowLayerIdentifier && layer.identifier != arrowSourceIdentifier {
-                    style.insertLayer(line, above: layer)
-                    style.insertLayer(lineCasing, below: line)
-                    return
+            if let source = style.source(withIdentifier: sourceIdentifier) as? MGLShapeSource {
+                source.shape = polyline
+            } else {
+                let geoJSONSource = MGLShapeSource(identifier: sourceIdentifier, shape: polyline, options: nil)
+                let line = MGLLineStyleLayer(identifier: routeLayerIdentifier, source: geoJSONSource)
+                let lineCasing = MGLLineStyleLayer(identifier: routeLayerCasingIdentifier, source: geoJSONSource)
+                
+                line.lineColor = MGLStyleValue(rawValue: NavigationUI.shared.tintStrokeColor.withAlphaComponent(0.6))
+                line.lineWidth = MGLStyleValue(rawValue: 5)
+                lineCasing.lineColor = MGLStyleValue(rawValue: NavigationUI.shared.tintStrokeColor)
+                lineCasing.lineWidth = MGLStyleValue(rawValue: 9)
+                
+                let cap = NSValue(mglLineCap: .round)
+                let join = NSValue(mglLineJoin: .round)
+                
+                line.lineCap = MGLStyleValue(rawValue: cap)
+                line.lineJoin = MGLStyleValue(rawValue: join)
+                lineCasing.lineCap = MGLStyleValue(rawValue: cap)
+                lineCasing.lineJoin = MGLStyleValue(rawValue: join)
+                
+                style.addSource(geoJSONSource)
+                for layer in style.layers.reversed() {
+                    if let layer = layer as? MGLStyleLayer, !(layer is MGLSymbolStyleLayer) &&
+                        layer.identifier != arrowLayerIdentifier && layer.identifier != arrowSourceIdentifier {
+                        style.insertLayer(line, above: layer)
+                        style.insertLayer(lineCasing, below: line)
+                        return
+                    }
                 }
             }
+        } else {
+            let origins = coordinates.prefix(upTo: coordinates.endIndex - 1)
+            let destionation = coordinates.suffix(from: 1)
+            let vertices = zip(origins, destionation)
+            let combinedVerticesCongestion = zip(vertices, nodes)
+            
+            var lines:[MGLPolylineFeature] = []
+            
+            combinedVerticesCongestion.forEach {
+                let polyline = MGLPolylineFeature(coordinates: [$0.0, $0.1], count: 2)
+                polyline.attributes["congestion"] = String(describing: $1)
+                lines.append(polyline)
+            }
+            
+            let allLines = MGLShapeCollectionFeature(shapes: lines)
+            let congestionSource = MGLShapeSource(identifier: "congestionSource", shape: allLines, options: nil)
+            if let source = style.source(withIdentifier: "congestionSource") as? MGLShapeSource {
+                source.shape = allLines
+            } else {
+                style.addSource(congestionSource)
+                
+                let congestionlayer = MGLLineStyleLayer(identifier: "lineCongestionLayer", source: congestionSource)
+                
+                let cap = NSValue(mglLineCap: .round)
+                let join = NSValue(mglLineJoin: .round)
+                
+                congestionlayer.lineColor = MGLStyleValue(interpolationMode: .categorical, sourceStops: ["unknown": MGLStyleValue(rawValue: NavigationUI.shared.tintStrokeColor), "low": MGLStyleValue(rawValue: NavigationUI.shared.tintStrokeColor), "moderate": MGLStyleValue(rawValue: NavigationUI.shared.moderateCongestion), "heavy": MGLStyleValue(rawValue: NavigationUI.shared.heavyCongestion), "severe": MGLStyleValue(rawValue: NavigationUI.shared.severeCongestion)], attributeName: "congestion", options: nil)
+                
+                congestionlayer.lineWidth = MGLStyleValue(rawValue: 7)
+                congestionlayer.lineCap = MGLStyleValue(rawValue: cap)
+                congestionlayer.lineJoin = MGLStyleValue(rawValue: join)
+                
+                style.addLayer(congestionlayer)
+            }
         }
-    }
+}
     
     public var showsTraffic: Bool {
         get {

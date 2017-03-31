@@ -10,6 +10,11 @@ extension UIColor {
     fileprivate class var defaultPrimaryText: UIColor { get { return #colorLiteral(red: 45.0/255.0, green: 45.0/255.0, blue: 45.0/255.0, alpha: 1) } }
     fileprivate class var defaultSecondaryText: UIColor { get { return #colorLiteral(red: 0.4509803922, green: 0.4509803922, blue: 0.4509803922, alpha: 1) } }
     fileprivate class var defaultLine: UIColor { get { return #colorLiteral(red: 0.7825912237, green: 0.7776457667, blue: 0.7863886952, alpha: 0.7) } }
+    fileprivate class var unknownCongestionTint: UIColor { get { return #colorLiteral(red:0.40, green:0.73, blue:0.37, alpha:1.0) } }
+    fileprivate class var lowCongestionTint: UIColor { get { return #colorLiteral(red:0.40, green:0.73, blue:0.37, alpha:1.0) } }
+    fileprivate class var moderateCongestionTint: UIColor { get { return #colorLiteral(red:1.00, green:0.67, blue:0.42, alpha:1.0) } }
+    fileprivate class var heavyCongestionTint: UIColor { get { return #colorLiteral(red:0.90, green:0.34, blue:0.43, alpha:1.0) } }
+    fileprivate class var severeCongestionTint: UIColor { get { return #colorLiteral(red:0.58, green:0.16, blue:0.30, alpha:1.0) } }
 }
 
 /**
@@ -25,6 +30,13 @@ public class NavigationUI: NSObject {
     fileprivate var _primaryTextColor: UIColor?
     fileprivate var _secondaryTextColor: UIColor?
     fileprivate var _lineColor: UIColor?
+    
+    fileprivate var _unknownCongestionTint: UIColor?
+    fileprivate var _lowCongestionTint: UIColor?
+    fileprivate var _moderateCongestionTint: UIColor?
+    fileprivate var _heavyCongestionTint: UIColor?
+    fileprivate var _severeCongestionTint: UIColor?
+    
     
     /// Used for guidance arrow, highlighted text and progress bars.
     public var tintColor: UIColor {
@@ -54,6 +66,31 @@ public class NavigationUI: NSObject {
     public var lineColor: UIColor {
         get { return _lineColor ?? .defaultLine }
         set { _lineColor = newValue }
+    }
+    
+    public var unknownCongestion: UIColor {
+        get { return _unknownCongestionTint ?? .unknownCongestionTint }
+        set { _unknownCongestionTint = newValue }
+    }
+    
+    public var lowCongestion: UIColor {
+        get { return _lowCongestionTint ?? .lowCongestionTint }
+        set { _lowCongestionTint = newValue }
+    }
+    
+    public var moderateCongestion: UIColor {
+        get { return _moderateCongestionTint ?? .moderateCongestionTint }
+        set { _moderateCongestionTint = newValue }
+    }
+    
+    public var heavyCongestion: UIColor {
+        get { return _heavyCongestionTint ?? .heavyCongestionTint }
+        set { _heavyCongestionTint = newValue }
+    }
+    
+    public var severeCongestion: UIColor {
+        get { return _severeCongestionTint ?? .severeCongestionTint }
+        set { _severeCongestionTint = newValue }
     }
     
     /**
