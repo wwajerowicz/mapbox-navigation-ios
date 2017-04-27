@@ -10,6 +10,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        assert(MGLAccountManager.accessToken() != "PASTE MAPBOX ACCESS TOKEN HERE", "Open Info.plist and set MGLMapboxAccessToken to your access token. Go to https://www.mapbox.com/studio/account/tokens/ to obtain an access token.")
         return true
     }
 
