@@ -135,6 +135,16 @@ public class Style: NSObject {
     public var cellSubtitleLabelTextColor: UIColor?
     
     /**
+     `wayNameTextColor` sets the color for the current way name label.
+     */
+    public var wayNameTextColor: UIColor?
+    
+    /**
+     `wayNameLabelFont` sets the font of the current way name label.
+     */
+    public var wayNameLabelFont: UIFont?
+    
+    /**
      `defaultStyle` returns the default style for Mapbox Navigation SDK.
      */
     public class var defaultStyle: Style {
@@ -178,11 +188,10 @@ public class Style: NSObject {
             NavigationMapView.appearance(for: traitCollection).tintColor = color
             ProgressBar.appearance(for: traitCollection).backgroundColor = color
             Button.appearance(for: traitCollection).tintColor = color
-            
             ToggleView.appearance(for: traitCollection).tintColor = color
             ToggleView.appearance(for: traitCollection).onTintColor = color
-            
             IconImageView.appearance(for: traitCollection).tintColor = color
+            HighlightedButton.appearance(for: traitCollection).setTitleColor(color, for: .normal)
         }
         
         if let color = primaryTextColor {
@@ -239,12 +248,28 @@ public class Style: NSObject {
         if let color = cellSubtitleLabelTextColor {
             CellSubtitleLabel.appearance(for: traitCollection).textColor = color
         }
+        
+        if let color = wayNameTextColor {
+            WayNameLabel.appearance(for: traitCollection).textColor = color
+        }
+        
+        if let font = wayNameLabelFont {
+            WayNameLabel.appearance(for: traitCollection).font = font
+        }
     }
 }
 
+/**
+ `MBButton` sets the tintColor according to the style.
+ */
 @objc(MBButton)
 public class Button: StylableButton { }
 
+/**
+ `MBHighlightedButton` sets the button’s titleColor for normal control state
+ according to the style in addition to the styling behavior inherited from
+ `MBButton`.
+ */
 @objc(MBHighlightedButton)
 public class HighlightedButton: Button { }
 
@@ -266,6 +291,9 @@ public class HeaderTitleLabel: StylableLabel { }
 
 @objc(MBHeaderSubtitleLabel)
 public class HeaderSubtitleLabel: StylableLabel { }
+
+@objc(MBWayNameLabel)
+public class WayNameLabel: StylableLabel { }
 
 @objc(MBProgressBar)
 public class ProgressBar: UIView { }
